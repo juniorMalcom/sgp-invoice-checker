@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGP Invoice Checker</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e3a8a, #60a5fa); /* Blue gradient */
+            min-height: 100vh;
+            color: #fff;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+        }
+        h1 {
+            font-size: 28px;
+            color: #fff;
+            margin: 0;
+        }
+        .company-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #dbeafe; /* Light blue for contrast */
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .input-section {
+            background: rgba(255, 255, 255, 0.1); /* Semi-transparent white */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            margin: 20px 0;
+        }
+        input[type="file"], input[type="text"] {
+            padding: 12px;
+            width: 100%;
+            margin: 10px 0;
+            box-sizing: border-box;
+            border: none;
+            border-radius: 5px;
+            background: #fff;
+            color: #1e3a8a; /* Dark blue text */
+            font-size: 16px;
+        }
+        input[type="file"] {
+            background: #dbeafe; /* Light blue */
+        }
+        #results {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            min-height: 100px;
+        }
+        .match {
+            padding: 10px;
+            background: #93c5fd; /* Medium blue */
+            color: #1e3a8a; /* Dark blue text */
+            margin: 5px 0;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .match:hover {
+            background: #60a5fa; /* Lighter blue on hover */
+        }
+        .no-match {
+            color: #fecaca; /* Soft red for errors */
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Invoice Checker</h1>
+        <div class="company-name">SGP Plumbing & HVAC</div>
+    </header>
+    <div class="input-section">
+        <input type="file" id="csvFile" accept=".csv" onchange="loadCSV()">
+        <input type="text" id="partNumber" placeholder="Enter Part Number" oninput="search()">
+        <input type="text" id="itemDescription" placeholder="Enter Item Description" oninput="search()">
+    </div>
+    <div id="results"></div>
+
+    <script>
+        let items = [];
+
+        // Load and parse the CSV file
+        function loadCSV() {
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                items = parseCSV(text);
+                document.getElementById('results').innerHTML = '<p>CSV loaded successfully! Start searching.</p>';
+            };
+            reader.readAsText(file);
+        }
+
+        // Parse CSV into array of objects
+        function parseCSV(text) {
+            const lines = text.split('\n').filter(line => line.trim() !== '');
+            const headers = lines[0].split(',').map(h => h.trim());
+            return lines.slice(1).map(line => {
+                const values = line.split(',').map(v => v.trim());
+                return {
+                    ITEM: values[0],
+                    QUANTITY: values[1],
+                    PRICE: values[2],
+                    ITEM_CATEGORY: values[3],
+                    PART_NUMBER: values[4]
+                };
+            });
+        }
+
+        // Search function triggered by input
+        function search() {
+            const partNumber = document.getElementById('partNumber').value.trim().toUpperCase();
+            const itemDesc = document.getElementById('itemDescription').value.trim().toUpperCase();
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+
+            if (items.length === 0) {
+                resultsDiv.innerHTML = '<p class="no-match">Please upload a CSV file first.</p>';
+                return;
+            }
+
+            let matches = items;
+            if (partNumber) {
+                matches = matches.filter(item => item.PART_NUMBER.toUpperCase() === partNumber);
+            }
+            if (itemDesc) {
+                matches = matches.filter(item => item.ITEM.toUpperCase().includes(itemDesc));
+            }
+
+            if (matches.length > 0) {
+                matches.forEach(item => {
+                    resultsDiv.innerHTML += `
+                        <div class="match">
+                            Item: ${item.ITEM} | Price: $${item.PRICE} | Part #: ${item.PART_NUMBER}
+                        </div>`;
+                });
+            } else {
+                resultsDiv.innerHTML = '<p class="no-match">No matches found.</p>';
+            }
+        }
+    </script>
+</body>
+</html>
